@@ -1,11 +1,11 @@
 name: brotli
-version: 1.0.0
+version: 1.0.1
 author: Tobe O <thosakwe@gmail.com>
 description: Native bindings for the Brotli compressor. Supports a dart:convert codec. Builds with CMake 3.8.0 or greater.
 homepage: https://github.com/thosakwe/brotli
 environment:
-  sdk: ">=1.8.0"
+  sdk: ">=1.8.0 <3.0.0"
 dev_dependencies:
   angel_framework: ^1.0.0
-  angel_http2: ^1.0.0
   angel_static: ^1.0.0
+  file: ^2.0.0

@@ -1,11 +1,12 @@
-import 'dart:convert';
 import 'package:brotli/brotli.dart';
 
 main() {
-  var str = 'Hello, world!'.codeUnits;
-  var encoded = BROTLI.encode(str);
-  print(encoded);
+  var str = 'Hello, world!';
+  print('Original: $str');
 
-  var decoded = BROTLI.decode(encoded);
-  print(new String.fromCharCodes(decoded));
+  var encoded = brotli.encode(str.codeUnits);
+  print('Encoded: $encoded');
+
+  var decoded =  new String.fromCharCodes(brotli.decode(encoded));
+  print('Decoded: $decoded');
 }

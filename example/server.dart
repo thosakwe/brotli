@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:angel_framework/angel_framework.dart';
-import 'package:angel_http2/angel_http2.dart';
 import 'package:angel_static/angel_static.dart';
 import 'package:brotli/brotli.dart';
 import 'package:file/local.dart';
@@ -13,7 +11,7 @@ main() async {
     ..injectEncoders({
       //'gzip': GZIP.encoder,
       //'deflate': ZLIB.encoder,
-      'br': BROTLI.encoder,
+      'br': brotli.encoder,
     });
 
   var vDir = new VirtualDirectory(
@@ -27,13 +25,7 @@ main() async {
 
   app.use(vDir.handleRequest);
 
-  var ctx = new SecurityContext()
-    ..useCertificateChain('dev.pem')
-    ..usePrivateKey('dev.key', password: 'dartdart');
-  ctx.setAlpnProtocols(['h2'], true);
-
   var http = new AngelHttp(app);
-  var http2 = new AngelHttp2(app, ctx)..onHttp1.listen(http.handleRequest);
-  var server = await http2.startServer('127.0.0.1', 3000);
-  print('Listening at https://${server.address.address}:${server.port}');
+  var server = await http.startServer('127.0.0.1', 3000);
+  print('Listening at http://${server.address.address}:${server.port}');
 }
