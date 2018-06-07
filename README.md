@@ -1,5 +1,6 @@
 # brotli
 [![Pub](https://img.shields.io/pub/v/brotli.svg)](https://pub.dartlang.org/packages/brotli)
+[![build status](https://travis-ci.org/thosakwe/brotli.svg?branch=master)](https://travis-ci.org/thosakwe/brotli)
 
 Native bindings for the [Brotli](https://github.com/google/brotli)
 compressor. Supports a `dart:convert` codec.

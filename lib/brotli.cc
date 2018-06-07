@@ -56,6 +56,14 @@ void brotli_encode(Dart_NativeArguments arguments) {
     Dart_SetReturnValue(arguments, output_handle);
 }
 
+void *brotli_scope_allocate(void *opaque, size_t size) {
+    return Dart_ScopeAllocate(size);
+}
+
+void brotli_scope_deallocate(void *opaque, void *address) {
+    // Do nothing
+}
+
 void brotli_decode(Dart_NativeArguments arguments) {
     void *input_data;
     intptr_t length;
@@ -64,40 +72,61 @@ void brotli_decode(Dart_NativeArguments arguments) {
     // Get the input byte array.
     Dart_Handle list_handle = Dart_GetNativeArgument(arguments, 0);
     HandleError(Dart_TypedDataAcquireData(list_handle, &type, &input_data, &length));
+    Dart_ThrowException(list_handle);
 
-
-    auto size = (size_t) length;
-    auto *output = new std::vector<uint8_t>(size);
-
-    BrotliDecoderState *state = BrotliDecoderCreateInstance(nullptr, nullptr, nullptr);
-
+    BrotliDecoderState *state = BrotliDecoderCreateInstance(brotli_scope_allocate, brotli_scope_deallocate, nullptr);
     auto available_in = (size_t) length;
     auto *next_in = (const uint8_t *) input_data;
     size_t available_out = 0;
     uint8_t *next_out = nullptr;
 
-    BrotliDecoderResult result = BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT;
-    while (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
+    // Create a BytesBuilder.
+    Dart_Handle add = Dart_NewStringFromCString("add");
+    Dart_Handle dart_io = Dart_LookupLibrary(Dart_NewStringFromCString("dart:io"));
+    Dart_Handle bytesBuilder_type = Dart_GetType(dart_io, Dart_NewStringFromCString("BytesBuilder"), 0, nullptr);
+    Dart_Handle bytes_builder = Dart_New(bytesBuilder_type, Dart_EmptyString(), 0, nullptr);
+
+    BrotliDecoderResult result;
+
+    do {
         result = BrotliDecoderDecompressStream(state,
                                                &available_in, &next_in,
                                                &available_out, &next_out, nullptr);
         size_t buffer_length = 0; // Request all available output.
         const uint8_t *buffer = BrotliDecoderTakeOutput(state, &buffer_length);
+
+        // Create a new Uint8List, and write to the builder.
+        Dart_Handle uint8List = Dart_NewExternalTypedData(Dart_TypedData_kUint8, (void *) buffer, buffer_length);
+        HandleError(Dart_Invoke(bytes_builder, add, 1, &uint8List));
+
+        /*
         if (buffer_length) {
             (*output).insert((*output).end(), buffer, buffer + buffer_length);
         }
+        */
+    } while (result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT);
+
+    // Release the input data.
+    HandleError(Dart_TypedDataReleaseData(list_handle));
+
+    Dart_Handle output_handle = Dart_NewList(3);
+    Dart_ListSetAt(output_handle, 1, bytes_builder);
+    Dart_ListSetAt(output_handle, 2, Dart_Null());
+
+    // Throw an error if there was one.
+    if (result != BROTLI_DECODER_RESULT_ERROR) Dart_ListSetAt(output_handle, 0, Dart_Null());
+    else {
+        BrotliDecoderErrorCode code = BrotliDecoderGetErrorCode(state);
+        Dart_ListSetAt(output_handle, 0, Dart_NewStringFromCString(BrotliDecoderErrorString(code)));
+        Dart_ListSetAt(output_handle, 2, Dart_NewInteger(code));
     }
-
-    BrotliDecoderDestroyInstance(state);
-
-    // Create a new byte array.
-    Dart_Handle output_handle = Dart_NewExternalTypedData(Dart_TypedData_kUint8, output->data(), output->size());
 
     // And return.
     Dart_SetReturnValue(arguments, output_handle);
 
-    // Delete the vector we created.
-    delete output;
+    // Delete the data we created.
+    BrotliDecoderDestroyInstance(state);
+    //delete output;
 }
 
 Dart_NativeFunction ResolveName(Dart_Handle name, int argc, bool *auto_setup_scope) {

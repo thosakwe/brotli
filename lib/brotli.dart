@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart-ext:dart_brotli';
 
@@ -29,10 +30,23 @@ class BrotliDecoder extends Converter<List<int>, List<int>> {
 
   @override
   List<int> convert(List<int> input) {
-    return _decode(input is Uint8List ? input : new Uint8List.fromList(input));
+    var result =
+        _decode(input is Uint8List ? input : new Uint8List.fromList(input));
+    if (result[0] != null) throw new BrotliException(result[2], result[0]);
+    return (result[1] as BytesBuilder).takeBytes();
   }
 }
 
 List<int> _encode(Uint8List input) native "brotli_encode";
 
-List<int> _decode(Uint8List input) native "brotli_decode";
+List _decode(Uint8List input) native "brotli_decode";
+
+class BrotliException implements Exception {
+  final int code;
+  final String message;
+
+  const BrotliException(this.code, this.message);
+
+  @override
+  String toString() => 'Brotli exception $code: $message';
+}
