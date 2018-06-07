@@ -15,7 +15,7 @@ a `pubspec.yaml`.
 3. In your command line, `cd` to where `brotli` is saved locally on your system
 On Linux/MacOS/Unix, this should be `~/.pub-cache/hosted/pub.dartlang.org/brotli`.
 On Windows, this should be `%APPDATA%\Pub\Cache\hosted\pub.dartlang.org\brotli`.
-4. `cd` to where your desired version of `brotli` is. ex. `1.1.0`.
+4. `cd` to where your desired version of `brotli` is. ex. `1.0.1`.
 5. Configure the project with `cmake .`
 6. Build `libdart_brotli` by running `cmake --build .`
 
